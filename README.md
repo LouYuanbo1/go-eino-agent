@@ -159,7 +159,7 @@ func main() {
     agent := pythonAgent.NewDefaultPythonAgentLocal(ctx, model, localConfig)
     
     // 执行Python代码
-    agent.OutputMessage(ctx, "编写一个函数计算斐波那契数列的第10个数", false)
+    agent.OutputMessage(ctx,"使用Python生成一个简易的线性回归模型", false)
 }
 ```
 
