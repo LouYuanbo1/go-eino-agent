@@ -1,0 +1,3 @@
+elasticsearch:
+  username: your_elasticsearch_username
+  password: your_elasticsearch_password
