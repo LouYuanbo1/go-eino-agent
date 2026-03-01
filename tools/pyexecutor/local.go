@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func PythonFuncLocal(ctx context.Context, config *LocalOperatorConfig) func(ctx context.Context, params PythonParams) (string, error) {
-	return func(ctx context.Context, params PythonParams) (string, error) {
+func PythonFuncLocal(ctx context.Context, config *LocalOperatorConfig) func(ctx context.Context, params *PythonParams) (string, error) {
+	return func(ctx context.Context, params *PythonParams) (string, error) {
 
 		fmt.Printf("调用Python执行工具\n")
 		fmt.Printf("python code: %s\n", params.Code)

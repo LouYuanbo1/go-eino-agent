@@ -19,8 +19,8 @@ type SpiderParams struct {
 	URL string `json:"url" jsonschema:"description=用于指定要爬取的目标 URL"`
 }
 
-func SpiderFunc(ctx context.Context, config *SpiderConfig) func(ctx context.Context, params SpiderParams) (string, error) {
-	return func(ctx context.Context, params SpiderParams) (string, error) {
+func SpiderFunc(ctx context.Context, config *SpiderConfig) func(ctx context.Context, params *SpiderParams) (string, error) {
+	return func(ctx context.Context, params *SpiderParams) (string, error) {
 		u := launcher.New().Bin(config.Bin).MustLaunch()
 		browser := rod.New().ControlURL(u).MustConnect()
 		defer browser.Close()

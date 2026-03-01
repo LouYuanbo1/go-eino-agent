@@ -14,8 +14,8 @@ type PythonParams struct {
 	Code string `json:"code" jsonschema:"description=用于指定要执行的 Python 代码"`
 }
 
-func PythonFuncInSandbox(ctx context.Context, config *sandbox.Config) func(ctx context.Context, params PythonParams) (string, error) {
-	return func(ctx context.Context, params PythonParams) (string, error) {
+func PythonFuncInSandbox(ctx context.Context, config *sandbox.Config) func(ctx context.Context, params *PythonParams) (string, error) {
+	return func(ctx context.Context, params *PythonParams) (string, error) {
 		op, err := sandbox.NewDockerSandbox(ctx, config)
 		if err != nil {
 			log.Fatal(err)

@@ -6,7 +6,6 @@ import (
 
 	"github.com/LouYuanbo1/go-eino-agent/prints"
 	"github.com/LouYuanbo1/go-eino-agent/tools/search/duckduckgo"
-
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/tool"
