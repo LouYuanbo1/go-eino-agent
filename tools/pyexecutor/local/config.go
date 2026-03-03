@@ -1,4 +1,4 @@
-package pyexecutor
+package local
 
 import (
 	"bytes"
@@ -20,8 +20,8 @@ const (
 	IDFormatTime = IDFormat("20060102150405") // 时间格式，例如：20230801143000
 )
 
-// LocalOperatorConfig 定义了 LocalOperator 的配置选项
-type LocalOperatorConfig struct {
+// OperatorConfig 定义了 LocalOperator 的配置选项
+type OperatorConfig struct {
 	TaskIDFormat IDFormat // 新增：任务ID格式，用于生成任务ID
 	// RootDir 是所有文件操作允许的根目录。
 	// 如果设置，所有文件路径必须位于此目录下，否则操作会被拒绝。
@@ -48,11 +48,11 @@ type LocalOperatorConfig struct {
 
 // LocalOperator 是 commandline.Operator 的本地实现，支持文件操作和命令执行。
 type LocalOperator struct {
-	config *LocalOperatorConfig
+	config *OperatorConfig
 }
 
 // NewLocalOperator 创建一个新的 LocalOperator，并应用默认配置。
-func NewLocalOperator(config *LocalOperatorConfig) *LocalOperator {
+func NewLocalOperator(config *OperatorConfig) *LocalOperator {
 	if config.DefaultFilePerm == 0 {
 		config.DefaultFilePerm = 0644
 	}
@@ -208,7 +208,10 @@ func (l *LocalOperator) RunCommand(ctx context.Context, command []string) (*comm
 	err := cmd.Run()
 	if err != nil {
 		// 如果是退出码错误，返回标准错误内容以便调试
-		return nil, fmt.Errorf("command execution failed: %w\nstderr: %s", err, errBuf.String())
+		return &commandline.CommandOutput{
+			Stdout: outBuf.String(),
+			Stderr: errBuf.String(),
+		}, fmt.Errorf("command execution failed: %w\nstderr: %s", err, errBuf.String())
 	}
 
 	return &commandline.CommandOutput{
