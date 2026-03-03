@@ -35,6 +35,7 @@ type OperatorConfig struct {
 			Linux/macOS: ~/anaconda3/envs/你的环境名称/bin/python 或 ~/miniconda3/envs/你的环境名称/bin/python。
 			Windows: C:\Users\你的用户名\anaconda3\envs\你的环境名称\python.exe
 	*/
+	FileName       string // 新增：Python 脚本文件名，默认值为 "eino_python"
 	ExecutablePath string // 新增：Python 可执行文件路径
 	// DefaultFilePerm 是写入文件时的默认权限，默认为 0644。
 	DefaultFilePerm os.FileMode
@@ -55,6 +56,9 @@ type LocalOperator struct {
 func NewLocalOperator(config *OperatorConfig) *LocalOperator {
 	if config.DefaultFilePerm == 0 {
 		config.DefaultFilePerm = 0644
+	}
+	if config.FileName == "" {
+		config.FileName = "eino_python"
 	}
 	if config.Shell == "" {
 		if runtime.GOOS == "windows" {

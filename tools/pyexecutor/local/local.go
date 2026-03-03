@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/LouYuanbo1/go-eino-agent/tools/pyexecutor/params"
+	"github.com/cloudwego/eino-ext/components/tool/commandline"
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/google/uuid"
@@ -17,94 +19,122 @@ import (
 
 func PythonFuncLocal(ctx context.Context, config *OperatorConfig) func(ctx context.Context, params *params.PythonParams) (string, error) {
 	return func(ctx context.Context, params *params.PythonParams) (string, error) {
-
-		fmt.Printf("调用Python执行工具\n")
-		fmt.Printf("python code: %s\n", params.Code)
-
 		op := NewLocalOperator(config)
-		var taskID string
+
+		// 生成唯一 ID
+		var fileID string
 		switch IDFormat(config.TaskIDFormat) {
 		case IDFormatUUID:
 			taskUUID, err := uuid.NewUUID()
 			if err != nil {
 				return "", fmt.Errorf("generate uuid: %w", err)
 			}
-			taskID = taskUUID.String()
-		case IDFormatTime:
-			taskID = time.Now().Format("20060102150405")
-		default:
-			taskID = time.Now().Format("20060102150405")
+			fileID = taskUUID.String()
+		default: // 默认使用时间戳
+			fileID = time.Now().Format("20060102150405")
 		}
+
 		wd := config.WorkDir
 		if wd == "" {
 			return "", fmt.Errorf("work dir not found")
 		}
-		filePath := filepath.Join(wd, fmt.Sprintf("%s.py", taskID))
-		if err := op.WriteFile(ctx, filePath, params.Code); err != nil {
-			return fmt.Sprintf("failed to create python file %s: %v", filePath, err), nil
+
+		// 临时 Python 文件路径
+		tempFileName := fmt.Sprintf("%s_temp_%s.py", config.FileName, fileID)
+		tempFilePath := filepath.Join(wd, tempFileName)
+
+		// 写入代码
+		if err := op.WriteFile(ctx, tempFilePath, params.Code); err != nil {
+			return "", fmt.Errorf("failed to create python file %s: %w", tempFilePath, err)
 		}
+		defer os.Remove(tempFilePath) // 确保最终删除
 
-		fmt.Printf("python file path: %s\n", filePath)
-
+		// 准备执行
 		pyExecutablePath := config.ExecutablePath
 		if pyExecutablePath == "" {
 			pyExecutablePath = "python"
 		}
-		result, err := op.RunCommand(ctx, []string{pyExecutablePath, filePath})
+
+		result, err := op.RunCommand(ctx, []string{pyExecutablePath, tempFilePath})
 		if err != nil {
+			// 处理解释器未找到
 			if strings.Contains(err.Error(), "executable file not found") {
 				return "", fmt.Errorf("python interpreter not found: %w", err)
 			}
-			// 如果 err 是 *exec.ExitError，说明命令运行了但返回非0退出码
-			// 此时应该将 stdout 和 stderr 合并返回，而不是返回错误
+			// 处理命令执行但返回非零退出码
 			var execError *exec.ExitError
 			if ok := errors.As(err, &execError); ok {
-				// 安全地从 result 中获取 stdout（如果 result 非 nil）
-				var output string
-				if result != nil {
-					output = result.Stdout
-				}
-
-				// 优先使用 execError.Stderr（它包含了命令的标准错误输出）
-				if len(execError.Stderr) > 0 {
-					if output != "" {
-						output += "\n"
-					}
-					output += "STDERR:\n" + string(execError.Stderr)
-				} else if result != nil && result.Stderr != "" {
-					// 如果 execError 没有 Stderr，但 result 中有，则使用 result 的（兜底）
-					if output != "" {
-						output += "\n"
-					}
-					output += "STDERR:\n" + result.Stderr
-				}
-
-				output = fmt.Sprintf("Exit code: %d\n%s", execError.ExitCode(), output)
+				output := buildOutput(result, execError)
 				return output, nil
 			}
-			// 其他未知错误
 			return "", fmt.Errorf("execute command error: %w", err)
 		}
-		output := result.Stdout
-		if result.Stderr != "" {
-			if output != "" {
-				output += "\n"
+
+		// 正常执行完成
+		output := buildOutput(result, nil)
+
+		// 若执行成功（stderr 均为空），则保存源码为 .py 文件
+		if result.ExitCode == 0 {
+			pyFileName := fmt.Sprintf("%s_%s.py", config.FileName, fileID)
+			pyFilePath := filepath.Join(wd, pyFileName)
+
+			// 读取临时文件内容（使用 op 确保安全）
+			content, err := op.ReadFile(ctx, tempFilePath)
+			if err != nil {
+				return "", fmt.Errorf("read temp file: %w", err)
 			}
-			output += "STDERR:\n" + result.Stderr
+			// 写入目标文件
+			if err := op.WriteFile(ctx, pyFilePath, content); err != nil {
+				return "", fmt.Errorf("write target file: %w", err)
+			}
 		}
-		if result.ExitCode != 0 {
-			output = fmt.Sprintf("Exit code: %d\n%s", result.ExitCode, output)
-		}
+
 		return output, nil
 	}
 }
 
+// buildOutput 辅助函数，用于组装最终输出字符串
+func buildOutput(result *commandline.CommandOutput, execErr *exec.ExitError) string {
+	var output string
+	if result != nil {
+		output = result.Stdout
+	}
+	if execErr != nil && len(execErr.Stderr) > 0 {
+		if output != "" {
+			output += "\n"
+		}
+		output += "STDERR:\n" + string(execErr.Stderr)
+	} else if result != nil && result.Stderr != "" {
+		if output != "" {
+			output += "\n"
+		}
+		output += "STDERR:\n" + result.Stderr
+	}
+	exitCode := 0
+	if execErr != nil {
+		exitCode = execErr.ExitCode()
+	} else if result != nil {
+		exitCode = result.ExitCode
+	}
+	if exitCode != 0 {
+		output = fmt.Sprintf("Exit code: %d\n%s", exitCode, output)
+	}
+
+	return output
+}
+
 func NewPythonToolLocal(ctx context.Context, config *OperatorConfig) (tool.InvokableTool, error) {
+	description :=
+		`
+	 Python executor can run any Python code you provide. 
+	 It is ideal for dynamic calculations, data processing, web scraping, file manipulation, or testing code snippets. 
+	 The tool writes your code to a temporary file, executes it, and returns the standard output (stdout) and standard error (stderr). 
+	 Use it whenever you need to compute something, generate results, or verify Python behavior. 
+	 Examples: print("hello world"), 2+2, import requests; response = requests.get("https://api.example.com"), or any custom script.
+	`
 	pythonTool, err := utils.InferTool(
-		"pythonExecutor", // tool name
-		`Python executor are used to execute Python code; they can be used to execute dynamic Python code, 
-		such as print("hello world")". 
-		It writes the Python code to a file, executes the file, and returns "stdout" and "stderr".`, // tool description`
+		"pythonExecutor",             // tool name
+		description,                  // tool description
 		PythonFuncLocal(ctx, config), // tool function
 	)
 	if err != nil {
