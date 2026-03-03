@@ -13,7 +13,7 @@ func main() {
 	ctx := context.Background()
 	chatModel, err := ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 		BaseURL: "http://localhost:11434",
-		Model:   "qwen3:1.7b",
+		Model:   "qwen3.5:2b",
 	})
 	if err != nil {
 		fmt.Printf("Error creating chat model: %v", err)

@@ -25,7 +25,7 @@ func main() {
 		return
 	}
 	retrieverModel, err := modelOllama.NewChatModel(ctx, &modelOllama.ChatModelConfig{
-		Model:   "qwen3:1.7b",
+		Model:   "qwen3.5:2b",
 		BaseURL: "http://localhost:11434",
 	})
 	if err != nil {

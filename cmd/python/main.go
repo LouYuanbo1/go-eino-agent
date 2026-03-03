@@ -15,7 +15,7 @@ func main() {
 	ctx := context.Background()
 	chatModel, err := ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 		BaseURL: "http://localhost:11434",
-		Model:   "qwen3:1.7b",
+		Model:   "qwen3.5:2b",
 	})
 	if err != nil {
 		fmt.Printf("Error creating chat model: %v", err)
@@ -35,5 +35,6 @@ func main() {
 		//ExecutablePath: "your_python_executable_path",
 	})
 	fmt.Printf("work dir: %s\n", wd)
-	pythonAgent.OutputMessage(ctx, "使用Python生成一个简易的线性回归模型", true)
+	pythonAgent.OutputMessage(ctx, "生成计算斐波那契数列前10项的代码", true)
+	//pythonAgent.OutputMessage(ctx, "使用Python生成一个简易的线性回归模型", true)
 }
