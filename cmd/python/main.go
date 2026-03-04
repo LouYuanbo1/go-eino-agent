@@ -7,7 +7,6 @@ import (
 
 	pythonAgent "github.com/LouYuanbo1/go-eino-agent/agents/python"
 	"github.com/LouYuanbo1/go-eino-agent/tools/pyexecutor/local"
-
 	"github.com/cloudwego/eino-ext/components/model/ollama"
 )
 
@@ -35,6 +34,6 @@ func main() {
 		//ExecutablePath: "your_python_executable_path",
 	})
 	fmt.Printf("work dir: %s\n", wd)
-	pythonAgent.OutputMessage(ctx, "生成计算斐波那契数列前10项的代码", true)
-	//pythonAgent.OutputMessage(ctx, "使用Python生成一个简易的线性回归模型", true)
+	//pythonAgent.OutputMessage(ctx, "生成计算斐波那契数列前10项的代码", true, true)
+	pythonAgent.OutputMessage(ctx, "使用Python生成一个简易的线性回归模型", true, true)
 }
