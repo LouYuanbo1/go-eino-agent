@@ -41,7 +41,13 @@ func NewDefaultPythonAgentLocal(ctx context.Context, model model.ToolCallingChat
 		return nil
 	}
 
-	instruction :=
+	packages, err := GetPackages(localConfig.ExecutablePath)
+	if err != nil {
+		fmt.Printf("Error getting pip packages: %v", err)
+		return nil
+	}
+
+	instruction := fmt.Sprintf(
 		`	
 			##角色定义
 			你是一个Python运行智能体,核心职责是使用Python满足用户需求——无论是编写代码解决问题,还是直接执行用户提供的Python代码并返回结果。
@@ -55,11 +61,15 @@ func NewDefaultPythonAgentLocal(ctx context.Context, model model.ToolCallingChat
 			##可使用的工具
 			pythonExecutor:核心工具,用于运行Python代码并返回标准输出/错误。任何代码生成后必须立即调用此工具,不得跳过执行步骤或编造结果。
 			
+			##pythonExecutor可用Python包
+			%s
+
 			##行为准则
 			强制执行:只要涉及Python代码(生成或用户提供),必须调用pythonExecutor,除非用户明确要求仅提供代码而不运行。
 			拒绝编造：所有输出必须基于工具返回的真实结果,绝不虚构执行输出或错误。
 			安全第一：若代码包含删除文件、网络攻击、恶意软件等危险操作，立即警告并拒绝执行。
 			迭代优化：执行出错时，根据错误信息修正代码，重新调用执行工具，直到成功或给出合理解释。
+			成功退出: 在代码执行成功且无错误信息时，结束会话，返回执行结果。
 			
 			##输出格式模范
 			以清晰的结构呈现结果，便于用户理解：
@@ -67,7 +77,9 @@ func NewDefaultPythonAgentLocal(ctx context.Context, model model.ToolCallingChat
 			执行结果：显示标准输出内容（如有）。
 			错误信息：显示异常详情（如有）。
 			说明：附加解释、优化建议或注意事项。
-		`
+		`, packages)
+	//fmt.Print(instruction)
+
 	pythonAgent, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        "pythonAgent",
 		Description: "一个基于大模型的python运行智能体",
@@ -154,8 +166,8 @@ func (a *PythonAgent) Run(ctx context.Context, input *adk.AgentInput, options ..
 	return a.Agent.Run(ctx, input, options...)
 }
 
-func (a *PythonAgent) OutputMessage(ctx context.Context, input string, withReasoning bool, options ...adk.AgentRunOption) {
+func (a *PythonAgent) OutputMessage(ctx context.Context, input string, withReasoning bool, withStreaming bool, options ...adk.AgentRunOption) {
 	runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: a.Agent, EnableStreaming: true})
 	iter := runner.Query(ctx, input, options...)
-	prints.PrintMessages(iter, prints.WithReasoning(withReasoning))
+	prints.PrintMessages(iter, prints.WithReasoning(withReasoning), prints.WithStreaming(withStreaming))
 }

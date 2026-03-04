@@ -40,7 +40,7 @@ func printMessage(msg *adk.MessageVariant, cfg *printConfig) {
 	}
 	if !msg.IsStreaming {
 		outputMessage(msg.Message, cfg)
-	} else {
+	} else if cfg.withStreaming {
 		streamMessage(msg.MessageStream, cfg)
 	}
 }
