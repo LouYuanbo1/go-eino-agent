@@ -15,6 +15,13 @@ type Config struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 	} `mapstructure:"elasticsearch"`
+	Deepseek struct {
+		APIKey string `mapstructure:"api_key"`
+	} `mapstructure:"deepseek"`
+	Github struct {
+		Token string `mapstructure:"token"`
+		ToolNames []string `mapstructure:"tool_names"`
+	} `mapstructure:"github"`
 }
 
 func InitConfig() (*Config, error) {

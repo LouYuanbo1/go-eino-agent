@@ -1,3 +1,10 @@
 elasticsearch:
   username: your_elasticsearch_username
   password: your_elasticsearch_password
+deepseek:
+  api_key: your_deepseek_api_key
+github:
+  token: your_github_token
+  tool_names:
+    - "get_file_contents"
+    - "search_repositories"
