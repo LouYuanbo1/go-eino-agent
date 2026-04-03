@@ -37,5 +37,5 @@ func main() {
 		return
 	}
 	githubAgent := githubAgent.NewDefaultGitHubAgent(ctx, chatModel, cli, config.Github.ToolNames...)
-	githubAgent.OutputMessage(ctx, "详细讲解一下字节的eino框架的功能,用中文回答", true)
+	githubAgent.OutputMessage(ctx, "详细讲解一下https://github.com/LouYuanbo1/go-webservice中gormc模块", true, true)
 }

@@ -65,5 +65,5 @@ func main() {
 		NumCandidates: 100,
 	})
 	retrieverAgent := retrieverAgent.NewDefaultRetrieverAgent(ctx, retrieverModel, typedRetriever)
-	retrieverAgent.OutputMessage(ctx, "帮我寻找北京适合应届毕业生的Go语言高薪工作岗位", true)
+	retrieverAgent.OutputMessage(ctx, "帮我寻找北京适合应届毕业生的Go语言高薪工作岗位", true, true)
 }

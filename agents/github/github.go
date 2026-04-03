@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/LouYuanbo1/go-eino-agent/prints"
-	"github.com/LouYuanbo1/go-eino-agent/tools/mcp/github"
-	githubutil "github.com/LouYuanbo1/go-eino-agent/tools/mcp/github/utils"
+	"github.com/LouYuanbo1/go-eino-agent/tools/mcp/github/tools"
+	"github.com/LouYuanbo1/go-eino-agent/tools/mcp/github/tools/get"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/model"
@@ -30,24 +30,32 @@ func NewGitHubAgent(ctx context.Context, config *adk.ChatModelAgentConfig) *GitH
 }
 
 func NewDefaultGitHubAgent(ctx context.Context, model model.ToolCallingChatModel, client *client.Client, toolNames ...string) *GitHubAgent {
-	toolInfos, err := github.NewGitHubTools(ctx, client, toolNames...)
+	toolMap, err := tools.NewGitHubTools(ctx, client, toolNames...)
 	if err != nil {
 		fmt.Printf("Error creating GitHub tools: %v", err)
 		return nil
 	}
 	tools := make([]tool.BaseTool, 0)
-	for _, tool := range toolInfos {
-		if strings.HasPrefix(tool.Name, "get") {
-			wrapper := githubutil.NewGithubGetFuncWrapper(tool.Tool)
+	for toolName, tool := range toolMap {
+		if strings.HasPrefix(toolName, "get") {
+			wrapper := get.NewGithubGetFuncWrapper(tool)
 			tools = append(tools, wrapper)
-		} else if strings.HasPrefix(tool.Name, "search") {
-			wrapper := githubutil.NewGithubSearchFuncWrapper(tool.Tool)
+		} else if strings.HasPrefix(toolName, "search") {
+			wrapper := get.NewGithubSearchFuncWrapper(tool)
 			tools = append(tools, wrapper)
 		} else {
-			tools = append(tools, tool.Tool)
+			tools = append(tools, tool)
 		}
 	}
-
+	if _, ok := toolMap["get_file_contents"]; ok {
+		overviewTool, err := get.NewOverviewTool(ctx, toolMap["get_file_contents"])
+		if err != nil {
+			fmt.Printf("Error creating overview tool: %v", err)
+			return nil
+		}
+		tools = append(tools, overviewTool)
+	}
+	
 	instruction :=
 		`
 			##角色定义
@@ -91,6 +99,7 @@ func NewDefaultGitHubAgent(ctx context.Context, model model.ToolCallingChatModel
 			【执行方案】
 			调用 search_repositories 获取字节eino框架的仓库信息
 			调用 get_file_contents 获取字节eino框架的README.md和代码内容
+			总结内容,将主要信息总结并回复给用户
 			
 		`
 	githubAgent, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
@@ -115,8 +124,8 @@ func (a *GitHubAgent) Run(ctx context.Context, input *adk.AgentInput, options ..
 	return a.Agent.Run(ctx, input, options...)
 }
 
-func (a *GitHubAgent) OutputMessage(ctx context.Context, input string, withReasoning bool, options ...adk.AgentRunOption) {
+func (a *GitHubAgent) OutputMessage(ctx context.Context, input string, withReasoning bool, withStreaming bool, options ...adk.AgentRunOption) {
 	runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: a.Agent, EnableStreaming: true})
 	iter := runner.Query(ctx, input, options...)
-	prints.PrintMessages(iter, prints.WithReasoning(withReasoning))
+	prints.PrintMessages(iter, prints.WithReasoning(withReasoning), prints.WithStreaming(withStreaming))
 }

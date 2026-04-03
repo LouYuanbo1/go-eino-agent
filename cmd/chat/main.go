@@ -19,5 +19,5 @@ func main() {
 		return
 	}
 	chatAgent := chatAgent.NewDefaultChatAgent(ctx, chatModel)
-	chatAgent.OutputMessage(ctx, "你好,帮我搜索一下eino是什么", false)
+	chatAgent.OutputMessage(ctx, "你好", true, true)
 }

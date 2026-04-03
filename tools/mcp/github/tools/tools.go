@@ -1,4 +1,4 @@
-package github
+package tools
 
 import (
 	"context"
@@ -10,12 +10,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-type toolInfo struct {
-	Name string
-	Tool tool.InvokableTool
-}
-
-func NewGitHubTools(ctx context.Context, client *client.Client, toolNames ...string) ([]toolInfo, error) {
+func NewGitHubTools(ctx context.Context, client *client.Client, toolNames ...string) (map[string]tool.InvokableTool, error) {
 	tools, err := mcpp.GetTools(ctx, &mcpp.Config{
 		Cli: client,
 		Meta: &mcp.Meta{
@@ -27,11 +22,10 @@ func NewGitHubTools(ctx context.Context, client *client.Client, toolNames ...str
 	if err != nil {
 		log.Fatalf("转换 MCP 工具失败: %v", err)
 	}
-	toolMap := make(map[string]bool)
+	toolMap := make(map[string]tool.InvokableTool)
 	for _, name := range toolNames {
-		toolMap[name] = true
+		toolMap[name] = nil
 	}
-	toolsInfo := make([]toolInfo, 0)
 	for _, t := range tools {
 		info, err := t.Info(ctx)
 		if err != nil {
@@ -50,11 +44,11 @@ func NewGitHubTools(ctx context.Context, client *client.Client, toolNames ...str
 				fmt.Printf("工具参数 Schema:\n%s\n", string(schemaJSON))
 			}
 		*/
-		if toolMap[info.Name] {
+		if _, ok := toolMap[info.Name]; ok {
 			if invokableTool, ok := t.(tool.InvokableTool); ok {
-				toolsInfo = append(toolsInfo, toolInfo{Name: info.Name, Tool: invokableTool})
+				toolMap[info.Name] = invokableTool
 			}
 		}
 	}
-	return toolsInfo, nil
+	return toolMap, nil
 }
