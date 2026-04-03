@@ -108,8 +108,8 @@ func (a *SearchAgent) Run(ctx context.Context, input *adk.AgentInput, options ..
 	return a.Agent.Run(ctx, input, options...)
 }
 
-func (a *SearchAgent) OutputMessage(ctx context.Context, input string, withReasoning bool, options ...adk.AgentRunOption) {
+func (a *SearchAgent) OutputMessage(ctx context.Context, input string, withReasoning bool, withStreaming bool, options ...adk.AgentRunOption) {
 	runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: a.Agent, EnableStreaming: true})
 	iter := runner.Query(ctx, input, options...)
-	prints.PrintMessages(iter, prints.WithReasoning(withReasoning))
+	prints.PrintMessages(iter, prints.WithReasoning(withReasoning), prints.WithStreaming(withStreaming))
 }

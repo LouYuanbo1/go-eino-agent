@@ -22,5 +22,5 @@ func main() {
 	searchAgent := searchAgent.NewDefaultSearchAgent(ctx, chatModel, &spider.SpiderConfig{
 		Bin: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
 	})
-	searchAgent.OutputMessage(ctx, "https://cloudwego.io/zh/docs/eino/quick_start/agent_llm_with_tools,讲解一下这个页面的信息", true)
+	searchAgent.OutputMessage(ctx, "https://cloudwego.io/zh/docs/eino/quick_start/agent_llm_with_tools,讲解一下这个页面的信息", true, true)
 }
